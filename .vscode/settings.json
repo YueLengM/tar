@@ -1,0 +1,15 @@
+{
+    "files.associations": {
+        ".env*": "dotenv",
+        "stdlib.h": "c",
+        "gzip.h": "c",
+        "string.h": "c",
+        "time.h": "c",
+        "stat.h": "c",
+        "dirent.h": "c",
+        "pathlib.h": "c",
+        "text_encoding": "c",
+        "typeinfo": "c",
+        "stdio.h": "c"
+    }
+}
