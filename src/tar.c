@@ -82,7 +82,7 @@ static int set_header_name(TarHeader *header, const char *name)
     memset(header->name, 0, sizeof(header->name));
     memset(header->prefix, 0, sizeof(header->prefix));
 
-    size_t len = strlen(name);
+    size_t len = safe_strlen(name);
     // 文件名可以直接放入 name 字段
     if (len < sizeof(header->name))
     {
@@ -319,7 +319,7 @@ int tar_add_file(Tar *tar, const char *path, const char *prefix_path)
 int tar_add_folder(Tar *tar, const char *path, const char *prefix_path)
 {
     const char *dirname = get_filename_from_path(path);
-    size_t new_size = strlen(prefix_path) + strlen(dirname) + 2;
+    size_t new_size = safe_strlen(prefix_path) + safe_strlen(dirname) + 2;
     if (new_size - 1 > MAX_TAR_PATH)
     {
         return TAR_ERROR;
@@ -328,7 +328,7 @@ int tar_add_folder(Tar *tar, const char *path, const char *prefix_path)
     char *new_prefix = (char *)malloc(new_size);
     join_path(prefix_path, dirname, new_prefix, new_size);
 
-    int ret = tar_create_folder(tar, new_prefix);
+    int ret = tar_add_folder_content(tar, path, new_prefix);
     free(new_prefix);
     return ret;
 }
@@ -345,16 +345,22 @@ int tar_add_folder_content(Tar *tar, const char *path, const char *prefix_path)
     struct dirent *entry;
     struct stat st;
     char *content_path = NULL;
+    char is_empty_dir = 1; // 换成 BOOL TRUE
     while ((entry = readdir(dir)) != NULL)
     {
-        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
         {
-            size_t path_len = strlen(path) + strlen(entry->d_name) + 2;
+            continue;
+        }
+
+            is_empty_dir = 0; // FALSE
+            size_t path_len = safe_strlen(path) + safe_strlen(entry->d_name) + 2;
             content_path = (char *)realloc(content_path, path_len);
             snprintf(content_path, path_len, "%s/%s", path, entry->d_name);
 
             if (stat(content_path, &st) != 0)
             {
+                closedir(dir);
                 free(content_path);
                 return TAR_ERROR;
             }
@@ -363,6 +369,7 @@ int tar_add_folder_content(Tar *tar, const char *path, const char *prefix_path)
             {
                 if (tar_add_folder(tar, content_path, prefix_path) != TAR_SUCCESS)
                 {
+                    closedir(dir);
                     free(content_path);
                     return TAR_ERROR;
                 }
@@ -371,14 +378,19 @@ int tar_add_folder_content(Tar *tar, const char *path, const char *prefix_path)
             {
                 if (tar_add_file(tar, content_path, prefix_path) != TAR_SUCCESS)
                 {
+                    closedir(dir);
                     free(content_path);
                     return TAR_ERROR;
                 }
             }
-        }
     }
     closedir(dir);
     free(content_path);
+
+    if (is_empty_dir == 1)
+    {
+        return tar_create_folder(tar, prefix_path);
+    }
 
     return TAR_SUCCESS;
 }

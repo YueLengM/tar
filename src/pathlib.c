@@ -2,6 +2,16 @@
 #include <string.h>
 #include <stdio.h>
 
+int safe_strlen(const char *str)
+{
+    if (str == NULL)
+    {
+        return 0;
+    }
+
+    return strlen(str);
+}
+
 const char *get_filename_from_path(const char *path)
 {
     if (path == NULL)
@@ -27,8 +37,8 @@ void join_path(const char *path1, const char *path2, char *output_buffer, rsize_
         path2 = "";
 
     // 计算最终路径的最大长度：path1 + '/' + path2
-    size_t len1 = strlen(path1);
-    size_t len2 = strlen(path2);
+    size_t len1 = safe_strlen(path1);
+    size_t len2 = safe_strlen(path2);
     size_t total_len = len1 + len2 + 2; // +2 为了一个 '/' 和一个 '\0'
 
     // 检查输出缓冲区是否足够
@@ -57,7 +67,7 @@ void normalize_path_separator(char *path)
     }
 
     // 遍历路径并替换所有的 '\' 为 '/'
-    for (size_t i = 0; i < strlen(path); i++)
+    for (size_t i = 0; i < safe_strlen(path); i++)
     {
         if (path[i] == '\\')
         {
