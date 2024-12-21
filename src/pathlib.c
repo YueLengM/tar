@@ -1,6 +1,14 @@
 #include "pathlib.h"
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
+#ifdef _WIN32
+#include <direct.h>
+#define mkdir(x, y) _mkdir(x)
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
 
 int safe_strlen(const char *str)
 {
@@ -29,6 +37,28 @@ const char *get_filename_from_path(const char *path)
         return last_separator + 1;
     }
 }
+
+void get_dir_from_path(const char *path, char *output_buffer, rsize_t buffer_size)
+{
+    if (path == NULL)
+    {
+        return;
+    }
+
+    char *last_separator = strrchr(path, '/');
+    if (last_separator == NULL)
+    {
+        return;
+    }
+    else
+    {
+        *last_separator = '\0';
+        strncpy(output_buffer, path, buffer_size);
+        output_buffer[buffer_size - 1] = '\0';
+        *last_separator = '/';
+    }
+}
+
 void join_path(const char *path1, const char *path2, char *output_buffer, rsize_t buffer_size)
 {
     if (path1 == NULL)
@@ -74,4 +104,57 @@ void normalize_path_separator(char *path)
             path[i] = '/';
         }
     }
+}
+
+int is_directory_exists(const char *path)
+{
+    return access(path, F_OK) == 0;
+}
+
+int mkdirs(const char *path)
+{
+    char tmp[256];
+    size_t len = safe_strlen(path);
+
+    if (len >= 256)
+    {
+        return -1;
+    }
+
+    strcpy(tmp, path);
+    tmp[len] = '\0';
+
+    if (tmp[len - 1] == '/' || tmp[len - 1] == '\\')
+    {
+        tmp[len - 1] = '\0';
+    }
+
+    for (char *p = tmp + 1; *p; ++p)
+    {
+        if (*p == '/' || *p == '\\')
+        {
+            *p = '\0';
+            if (is_directory_exists(tmp))
+            {
+                // empty
+            }
+            else if (mkdir(tmp, 0755) != 0 && errno != EEXIST)
+            {
+                return -1;
+            }
+            *p = '/';
+        }
+    }
+
+    // 创建最终目录
+    if (is_directory_exists(tmp))
+    {
+        // empty
+    }
+    else if (mkdir(tmp, 0755) != 0 && errno != EEXIST)
+    {
+        return -1;
+    }
+
+    return 0;
 }

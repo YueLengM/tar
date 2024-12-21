@@ -20,4 +20,8 @@ int main(int argc, char *argv[])
 
     gzip_compress("test.tar", "test.tar.gz");
     gzip_decompress("test.tar.gz", "test2.tar");
+
+    tar = tar_open("test.tar", TAR_MODE_READ);
+    tar_decompress(tar, "testout");
+    tar_close(tar);
 }

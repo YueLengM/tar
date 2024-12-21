@@ -180,7 +180,14 @@ static int write_eof(FILE *file)
 // tar_open 实现
 Tar *tar_open(const char *filename, TarMode mode)
 {
-    const char *open_mode = (mode == TAR_MODE_APPEND) ? "rb+" : "wb";
+    const char *open_mode;
+    if (mode == TAR_MODE_WRITE)
+        open_mode = "wb";
+    if (mode == TAR_MODE_APPEND)
+        open_mode = "rb+";
+    if (mode == TAR_MODE_READ)
+        open_mode = "rb";
+
     FILE *file = fopen(filename, open_mode);
     if (!file)
     {
@@ -390,6 +397,54 @@ int tar_add_folder_content(Tar *tar, const char *path, const char *prefix_path)
     if (is_empty_dir == 1)
     {
         return tar_create_folder(tar, prefix_path);
+    }
+
+    return TAR_SUCCESS;
+}
+
+int tar_decompress(Tar *tar, const char *path)
+{
+    char buffer[TAR_BLOCK_SIZE] = {0};
+    char full_path[256] = {0};
+    char tmp_path[256] = {0};
+    while (fread(tar->header, TAR_BLOCK_SIZE, 1, tar->file))
+    {
+        join_path(path, tar->header->prefix, full_path, 256);
+        join_path(full_path, tar->header->name, full_path, 256);
+
+        if (tar->header->type == TAR_TYPE_FILE)
+        {
+            get_dir_from_path(full_path, tmp_path, 256);
+            mkdirs(tmp_path);
+
+            FILE *file = fopen(full_path, "wb");
+            if (file == NULL)
+            {
+                return TAR_ERROR;
+            }
+
+            size_t size = strtol(tar->header->size, NULL, 8);
+            size_t read_size = 0;
+            while (size > 0)
+            {
+                read_size = fread(buffer, 1, TAR_BLOCK_SIZE, tar->file);
+                if (size < TAR_BLOCK_SIZE)
+                {
+                    fwrite(buffer, 1, size, file);
+                    break;
+                }
+                else
+                {
+                    fwrite(buffer, 1, read_size, file);
+                    size -= read_size;
+                }
+            }
+            fclose(file);
+        }
+        else if (tar->header->type == TAR_TYPE_FOLDER)
+        {
+            mkdirs(full_path);
+        }
     }
 
     return TAR_SUCCESS;

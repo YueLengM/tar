@@ -8,8 +8,9 @@
 // TAR 文件模式
 typedef enum
 {
-    TAR_MODE_WRITE, // 覆盖
-    TAR_MODE_APPEND // 追加
+    TAR_MODE_WRITE,  // 覆盖
+    TAR_MODE_APPEND, // 追加
+    TAR_MODE_READ    // 只读
 } TarMode;
 
 typedef struct Tar Tar;
@@ -87,5 +88,15 @@ int tar_add_folder(Tar *tar, const char *path, const char *prefix_path);
  * @return 如果成功添加文件夹，则返回 TAR_SUCCESS；否则返回 TAR_ERROR。
  */
 int tar_add_folder_content(Tar *tar, const char *path, const char *prefix_path);
+
+/**
+ * @brief 解压 tar 文件
+ *
+ * @param tar 指向 Tar 结构体的指针。
+ * @param path 要解压到的文件夹路径。
+ *
+ * @return 如果成功解压，则返回 TAR_SUCCESS；否则返回 TAR_ERROR。
+ */
+int tar_decompress(Tar *tar, const char *path);
 
 #endif // TAR_H
