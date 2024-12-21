@@ -353,36 +353,36 @@ int tar_add_folder_content(Tar *tar, const char *path, const char *prefix_path)
             continue;
         }
 
-            is_empty_dir = 0; // FALSE
-            size_t path_len = safe_strlen(path) + safe_strlen(entry->d_name) + 2;
-            content_path = (char *)realloc(content_path, path_len);
-            snprintf(content_path, path_len, "%s/%s", path, entry->d_name);
+        is_empty_dir = 0; // FALSE
+        size_t path_len = safe_strlen(path) + safe_strlen(entry->d_name) + 2;
+        content_path = (char *)realloc(content_path, path_len);
+        snprintf(content_path, path_len, "%s/%s", path, entry->d_name);
 
-            if (stat(content_path, &st) != 0)
+        if (stat(content_path, &st) != 0)
+        {
+            closedir(dir);
+            free(content_path);
+            return TAR_ERROR;
+        }
+
+        if (S_ISDIR(st.st_mode))
+        {
+            if (tar_add_folder(tar, content_path, prefix_path) != TAR_SUCCESS)
             {
                 closedir(dir);
                 free(content_path);
                 return TAR_ERROR;
             }
-
-            if (S_ISDIR(st.st_mode))
+        }
+        else if (S_ISREG(st.st_mode))
+        {
+            if (tar_add_file(tar, content_path, prefix_path) != TAR_SUCCESS)
             {
-                if (tar_add_folder(tar, content_path, prefix_path) != TAR_SUCCESS)
-                {
-                    closedir(dir);
-                    free(content_path);
-                    return TAR_ERROR;
-                }
+                closedir(dir);
+                free(content_path);
+                return TAR_ERROR;
             }
-            else if (S_ISREG(st.st_mode))
-            {
-                if (tar_add_file(tar, content_path, prefix_path) != TAR_SUCCESS)
-                {
-                    closedir(dir);
-                    free(content_path);
-                    return TAR_ERROR;
-                }
-            }
+        }
     }
     closedir(dir);
     free(content_path);
