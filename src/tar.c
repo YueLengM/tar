@@ -66,15 +66,15 @@ static void init_header(TarHeader *header)
 {
     memset(header, 0, TAR_BLOCK_SIZE);
 
-    strcpy_s(header->_mode, sizeof(header->_mode), "0000777");
-    strcpy_s(header->_uid, sizeof(header->_uid), "0000000");
-    strcpy_s(header->_gid, sizeof(header->_gid), "0000000");
+    strcpy(header->_mode, "0000777");
+    strcpy(header->_uid, "0000000");
+    strcpy(header->_gid, "0000000");
 
-    strcpy_s(header->_magic, sizeof(header->_magic), "ustar");
+    strcpy(header->_magic, "ustar");
     memcpy(header->_version, "00", sizeof(header->_version));
 
-    strcpy_s(header->_devmajor, sizeof(header->_devmajor), "0000000");
-    strcpy_s(header->_devminor, sizeof(header->_devminor), "0000000");
+    strcpy(header->_devmajor, "0000000");
+    strcpy(header->_devminor, "0000000");
 }
 
 static int set_header_name(TarHeader *header, const char *name)
@@ -86,7 +86,7 @@ static int set_header_name(TarHeader *header, const char *name)
     // 文件名可以直接放入 name 字段
     if (len < sizeof(header->name))
     {
-        strcpy_s(header->name, len + 1, name);
+        strcpy(header->name, name);
         return TAR_SUCCESS;
     }
 
@@ -111,7 +111,7 @@ static int set_header_name(TarHeader *header, const char *name)
             left = len - seg_end - 1;
             if (left < sizeof(header->name))
             {
-                strcpy_s(header->name, left + 1, name + seg_end + 1);
+                strcpy(header->name, name + seg_end + 1);
                 return TAR_SUCCESS;
             }
         }
